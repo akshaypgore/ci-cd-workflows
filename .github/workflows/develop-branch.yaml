@@ -1,0 +1,13 @@
+on:
+  workflow_call:
+    inputs:
+      branch:
+        required: true
+        type: string
+
+jobs:
+  develop-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo ${{ inputs.branch }}
