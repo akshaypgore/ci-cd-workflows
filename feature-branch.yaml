@@ -1,0 +1,37 @@
+on:
+  workflow_call:
+    inputs:
+      branch:
+        required: true
+        type: string
+
+jobs:
+  feature-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "${GITHUB_REF_NAME}"
+
+      - run: |
+          echo "${{github.ref_name}}"
+
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Read version file from current feature branch
+        id: get_version
+        run: |
+          echo "version=$(cat version.txt)" >> $GITHUB_OUTPUT
+      
+      - name: Get short git SHA
+        id: get_sha
+        run: |
+          # Extracts the first 7 characters of the SHA
+          echo "sha_short=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
+
+      - name: Docker tags for feature branch
+        run: |
+          docker_image_tag="${{ steps.get_version.outputs.version }}-${{ steps.get_sha.outputs.sha_short }}"
+          echo "${docker_image_tag}"
