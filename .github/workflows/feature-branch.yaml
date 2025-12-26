@@ -81,8 +81,8 @@ jobs:
           image-ref: "${{ inputs.dockerhub_repo }}/${{ inputs.repo }}:${{ steps.set_image_tag.outputs.docker_image_tag }}"
           # exit-code: '1'
           # ignore-unfixed: true
-          # vuln-type: 'os,library'
-          # severity: 'CRITICAL,HIGH'
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
           format: 'sarif'
           output: 'trivy-results.sarif'
       
