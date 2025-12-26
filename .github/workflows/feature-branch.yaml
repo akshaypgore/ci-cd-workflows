@@ -32,9 +32,9 @@ jobs:
           echo "sha_short=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
 
       - name: Docker tags for feature branch
+        id: set_image_tag
         run: |
-          docker_image_tag="${{ steps.get_version.outputs.version }}-${{ steps.get_sha.outputs.sha_short }}"
-          echo "${docker_image_tag}"
+          echo 'docker_image_tag=$(echo "${{ steps.get_version.outputs.version }}-${{ steps.get_sha.outputs.sha_short }}")' >> $GITHUB_OUTPUT
       
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -56,4 +56,4 @@ jobs:
           context: .
           push: false
           load: true
-          tags: ${{ inputs.repo }}:"${docker_image_tag}"
+          tags: "${{ inputs.repo }}:${{ steps.set_image_tag.outputs.docker_image_tag }}"
