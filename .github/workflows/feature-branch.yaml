@@ -19,6 +19,9 @@ on:
 jobs:
   feature-branch:
     runs-on: ubuntu-latest
+    permissions:
+      security-events: read  # Required to view code scanning results
+      contents: read         # Standard permission to checkout code
     steps:
       - run: |
           echo "${{ inputs.branch }}"
@@ -75,7 +78,7 @@ jobs:
         uses: aquasecurity/trivy-action@0.33.1
         with:
           image-ref: "${{ inputs.dockerhub_repo }}/${{ inputs.repo }}:${{ steps.set_image_tag.outputs.docker_image_tag }}"
-          format: 'table'
+          format: 'sarif'
           exit-code: '1'
           ignore-unfixed: true
           vuln-type: 'os,library'
