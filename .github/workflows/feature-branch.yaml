@@ -56,5 +56,4 @@ jobs:
           context: .
           push: false
           load: true
-          tags: ${{ inputs.repo }}:${docker_image_tag}
-          version: 6.18.0
+          tags: ${{ inputs.repo }}:"${docker_image_tag}"
