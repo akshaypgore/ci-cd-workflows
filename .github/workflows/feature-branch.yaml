@@ -10,9 +10,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |
-          echo "${GITHUB_REF_NAME}"
-
-      - run: |
           echo "${{github.ref_name}}"
 
       - name: Checkout code

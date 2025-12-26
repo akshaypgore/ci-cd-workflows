@@ -1,0 +1,54 @@
+on:
+  workflow_call:
+    inputs:
+      branch:
+        required: true
+        type: string
+
+jobs:
+  release-branch-configuration:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Get new version
+        id: get_new_version
+        run: |
+          echo "${{github.ref_name}}"
+          # echo "$(echo ${{github.ref_name}}| cut -d "-" -f2)"
+          echo "v1=$(echo ${{github.ref_name}}| cut -d "-" -f2)" >> $GITHUB_OUTPUT
+
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref }}
+
+      - name: Set up Git
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+
+      - name: Merge main into release
+        run: |
+          git merge -X ours origin/main --no-ff -m "Automated merge: main into release"
+
+      - name: Create RC version.txt
+        run: |
+          echo "${{ steps.get_new_version.outputs.v1 }}"
+          sed -i "s/SNAPSHOT/${{ steps.get_new_version.outputs.v1 }}/g" version.txt
+          cat version.txt
+
+      - uses: stefanzweifel/git-auto-commit-action@v7
+        with:
+          commit_message: Automated Change
+
+      - name: Get updated version
+        id: get_updated_version
+        run: |
+          echo "updated_version=$(cat version.txt)" >> $GITHUB_OUTPUT
+
+      - name: Docker tag
+        run: |
+          echo "${{ steps.get_updated_version.outputs.updated_version }}"
+          echo "Extra tag: latest-stage"
