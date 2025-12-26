@@ -34,12 +34,11 @@ jobs:
       - name: Docker tags for feature branch
         id: set_image_tag
         run: |
-          echo 'docker_image_tag=$(echo "${{ steps.get_version.outputs.version }}-${{ steps.get_sha.outputs.sha_short }}")' >> $GITHUB_OUTPUT
+          echo "docker_image_tag=${{ steps.get_version.outputs.version }}-${{ steps.get_sha.outputs.sha_short }}" >> $GITHUB_OUTPUT
       
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
         with:
-          version: v3.7.0
           platforms: arm64
       
       - name: Set up Docker Buildx
