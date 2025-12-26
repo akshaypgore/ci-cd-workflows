@@ -20,8 +20,9 @@ jobs:
   feature-branch:
     runs-on: ubuntu-latest
     permissions:
-      security-events: read  # Required to view code scanning results
-      contents: read         # Standard permission to checkout code
+      security-events: write
+      actions: read  # <--- Adding this often fixes the "not accessible" error
+      contents: read
     steps:
       - run: |
           echo "${{ inputs.branch }}"
