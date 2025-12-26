@@ -7,6 +7,9 @@ on:
       repo:
         required: true
         type: string
+      dockerhub_repo:
+        required: true
+        type: string
     secrets:
       DOCKERHUB_USERNAME:
         required: true
@@ -66,12 +69,12 @@ jobs:
           context: .
           push: true
           load: true
-          tags: "${{ vars.DOCKERHUB_REPO }}/${{ inputs.repo }}:${{ steps.set_image_tag.outputs.docker_image_tag }}"
+          tags: "${{ inputs.dockerhub_repo }}/${{ inputs.repo }}:${{ steps.set_image_tag.outputs.docker_image_tag }}"
       
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.33.1
         with:
-          image-ref: '${{ vars.DOCKERHUB_REPO }}/${{ inputs.repo }}:${{ steps.set_image_tag.outputs.docker_image_tag }}'
+          image-ref: "${{ inputs.dockerhub_repo }}/${{ inputs.repo }}:${{ steps.set_image_tag.outputs.docker_image_tag }}"
           format: 'table'
           exit-code: '1'
           ignore-unfixed: true
