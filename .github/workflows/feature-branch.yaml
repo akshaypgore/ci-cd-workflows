@@ -66,12 +66,12 @@ jobs:
           context: .
           push: true
           load: true
-          tags: "akshaygore/${{ inputs.repo }}:${{ steps.set_image_tag.outputs.docker_image_tag }}"
+          tags: "${{ vars.DOCKERHUB_REPO }}/${{ inputs.repo }}:${{ steps.set_image_tag.outputs.docker_image_tag }}"
       
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.33.1
         with:
-          image-ref: 'akshaygore/${{ inputs.repo }}:${{ steps.set_image_tag.outputs.docker_image_tag }}'
+          image-ref: '${{ vars.DOCKERHUB_REPO }}/${{ inputs.repo }}:${{ steps.set_image_tag.outputs.docker_image_tag }}'
           format: 'table'
           exit-code: '1'
           ignore-unfixed: true
