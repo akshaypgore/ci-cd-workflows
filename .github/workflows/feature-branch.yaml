@@ -37,6 +37,12 @@ jobs:
         run: |
           echo "version=$(cat version.txt)" >> $GITHUB_OUTPUT
       
+      - name: Verify version
+        run: |
+          chmod +x .github/scripts/version-check.sh
+          current_prod_version=$(git show master:version.txt)
+          .github/scripts/version-check.sh ${{ steps.get_version.outputs.version }} ${current_prod_version}
+      
       - name: Get short git SHA
         id: get_sha
         run: |
