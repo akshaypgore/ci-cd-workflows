@@ -45,7 +45,7 @@ jobs:
       - name: Read version file from master branch
         id: get_master_version
         run: |
-          echo "current_prod_version=$(git show master:version.txt)" >> $GITHUB_OUTPUT
+          echo "current_prod_version=$(git show origin/master:version.txt)" >> $GITHUB_OUTPUT
       
       - name: Verify version
         uses: actions/checkout@v6
