@@ -10,6 +10,11 @@ on:
       dockerhub_repo:
         required: true
         type: string
+      version_file_path:
+        description: 'Path to version.txt'
+        required: false
+        type: string
+        default: 'version.txt'
     secrets:
       DOCKERHUB_USERNAME:
         required: true
@@ -38,6 +43,14 @@ jobs:
           echo "version=$(cat version.txt)" >> $GITHUB_OUTPUT
       
       - name: Verify version
+        uses: actions/checkout@v6
+        with:
+          repository: akshaypgore/ci-cd-workflows
+          path: .
+          sparse-checkout: |
+            .github/scripts
+      
+      - name: Verify version script
         run: |
           chmod +x .github/scripts/version-check.sh
           current_prod_version=$(git show master:version.txt)
