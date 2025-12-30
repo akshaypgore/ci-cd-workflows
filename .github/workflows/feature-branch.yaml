@@ -42,6 +42,11 @@ jobs:
         run: |
           echo "version=$(cat version.txt)" >> $GITHUB_OUTPUT
       
+      - name: Read version file from master branch
+        id: get_master_version
+        run: |
+          echo "current_prod_version=$(git show master:version.txt)" >> $GITHUB_OUTPUT
+      
       - name: Verify version
         uses: actions/checkout@v6
         with:
@@ -53,8 +58,7 @@ jobs:
       - name: Verify version script
         run: |
           chmod +x .reusable-scripts/.github/scripts/version-check.sh
-          current_prod_version=$(git show master:version.txt)
-          .reusable-scripts/.github/scripts/version-check.sh ${{ steps.get_version.outputs.version }} ${current_prod_version}
+          .reusable-scripts/.github/scripts/version-check.sh ${{ steps.get_version.outputs.version }} ${{ steps.get_master_version.outputs.current_prod_version }}
       
       - name: Get short git SHA
         id: get_sha
