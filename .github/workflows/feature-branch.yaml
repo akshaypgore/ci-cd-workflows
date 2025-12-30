@@ -46,15 +46,15 @@ jobs:
         uses: actions/checkout@v6
         with:
           repository: akshaypgore/ci-cd-workflows
-          path: .
+          path: .reusable-scripts
           sparse-checkout: |
             .github/scripts
       
       - name: Verify version script
         run: |
-          chmod +x .github/scripts/version-check.sh
+          chmod +x .reusable-scripts/.github/scripts/version-check.sh
           current_prod_version=$(git show master:version.txt)
-          .github/scripts/version-check.sh ${{ steps.get_version.outputs.version }} ${current_prod_version}
+          .reusable-scripts/.github/scripts/version-check.sh ${{ steps.get_version.outputs.version }} ${current_prod_version}
       
       - name: Get short git SHA
         id: get_sha
