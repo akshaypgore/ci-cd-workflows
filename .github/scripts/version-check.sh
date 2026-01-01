@@ -3,8 +3,8 @@
 version_set=$1
 current_prod_version=$2
 string_check="SNAPSHOT"
-# echo "${version_set}"
-# echo "${current_prod_version}"
+echo "${version_set}"
+echo "${current_prod_version}"
 
 if [[ "$version_set" == *"$string_check"* ]]; then
     echo "Version Deployed is $(echo $version_set)"
@@ -13,7 +13,7 @@ else
     exit 1
 fi
 
-version_to_test=$(echo $version_set | awk -F "-" "{print $1}")
+version_to_test=$(echo $version_set | awk -F '-' '{print $1}')
 
 echo "$version_to_test"
 echo "$current_prod_version"
