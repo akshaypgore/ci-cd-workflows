@@ -7,7 +7,7 @@ string_check="SNAPSHOT"
 # echo "${current_prod_version}"
 
 if [[ "$version_set" == *"$string_check"* ]]; then
-    echo "Version Deployed is $(echo ${version_set}|awk -F "-" {print $2})"
+    echo "Version Deployed is $(echo $version_set | awk -F '-' '{print $2}')"
 else
     echo " no Found it!"
 fi
