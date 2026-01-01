@@ -15,6 +15,9 @@ fi
 
 version_to_test=$(echo $version_set | awk -F "-" "{print $1}")
 
+echo "$version_to_test"
+echo "$current_prod_version"
+
 if [[ "printf '%s\n' '$version_to_test' '$current_prod_version'|sort -V|head -n 1" == "$version_to_test" ]]; then
     echo "Version set is less than or equal to version in prod. Please bump the version"
     exit 1
