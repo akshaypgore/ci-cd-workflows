@@ -17,5 +17,5 @@ if [[ "printf '%s\n' '$(echo $version_set | awk -F "-" "{print $1}")' '$current_
     echo "Version set is less than or equal to version in prod. Please bump the version"
     exit 1
 else
-    :
+    echo "Good to go ahead"
 fi
