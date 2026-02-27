@@ -86,7 +86,7 @@ A hotfix is required when a critical bug is found in production and needs an imm
 |------|--------|
 | `master` | Hotfix branch is checked out from master (e.g., `hotfix/fix-login-crash`) |
 | `hotfix/*` | Bug is identified, fixed, and tested |
-| `master` | Merged into master → Production deployment triggered |
+| `master` | Merged into master -> Production deployment triggered |
 | `release/rc-xx` | Also merged into the current active release branch (sync) |
 | `develop` | Also merged into develop to keep all branches in sync |
 
@@ -115,6 +115,8 @@ The version suffix clearly communicates the stage of the code:
 
 ### Who Updates version.txt?
 
+All version updates are done **manually**. The CI pipeline is not involved in updating `version.txt` at any stage.
+
 | Stage | Who | Action |
 |-------|-----|--------|
 | New release cycle starts | Release Manager | Updates `version.txt` in develop to next version (e.g., `1.2.0-DEV`) |
@@ -122,32 +124,74 @@ The version suffix clearly communicates the stage of the code:
 | Release branch cut | Release Manager | Updates `version.txt` to `1.2.0-RC` |
 | Release merged into master | Release Manager | Updates `version.txt` to `1.2.0` (removes suffix) |
 
-> **Note:** The CI pipeline is not involved in updating `version.txt` at any stage — it is entirely manual. CI only acts as a validator to catch any version mistakes.
+### Parallel Feature Branch Flow (Two Developers)
 
-### Version Check in CI Pipeline
+The following shows how two developers work in parallel on separate feature branches and get their changes merged into develop without conflicts.
 
-Since feature branches always carry `SNAPSHOT` and develop always carries `DEV`, their versions will **never be equal under normal circumstances** — eliminating version conflicts between parallel feature branches working in the same release cycle.
+**Initial State:**
+```
+develop: 1.2.0-DEV
+```
 
-However, a conflict can occur at the **start of a new release cycle**:
+**Step 1 - Both developers check out from develop:**
+```
+Dev-1 checks out -> feature/add-user-auth
+Dev-2 checks out -> feature/add-payment-gateway
+```
 
-- Release Manager bumps `version.txt` in develop from `1.1.0-DEV` to `1.2.0-DEV`.
-- A developer with an existing feature branch checked out from the previous cycle still has `1.1.0-SNAPSHOT`.
-- When the developer merges develop into their feature branch, Git raises a **merge conflict on version.txt**.
-- The developer must manually resolve the conflict by updating their version to `1.2.0-SNAPSHOT`.
+**Step 2 - Both update version.txt on their feature branches:**
+```
+feature/add-user-auth        -> version.txt: 1.2.0-SNAPSHOT
+feature/add-payment-gateway  -> version.txt: 1.2.0-SNAPSHOT
+```
 
-The CI pipeline acts as a safety net in this case:
+**Step 3 - Both work independently, commit, and push upstream:**
+```
+feature/add-user-auth       -> automated tests + image build + scan
+feature/add-payment-gateway -> automated tests + image build + scan
+```
 
-- The feature branch must be up to date with develop before a PR can be merged (enforced via branch protection rules).
-- The CI pipeline checks that the version in `version.txt` on the feature branch is not equal to the version in develop.
-- If the versions match (e.g., both are `1.2.0-DEV`), the pipeline raises an error and blocks the merge, asking the developer to correct their version to `1.2.0-SNAPSHOT`.
+**Step 4 - Dev-1 merges develop into their branch and raises PR:**
+```
+Dev-1: merge develop -> feature/add-user-auth (no conflicts)
+Dev-1: raises PR to develop
+Dev-1: PR approved and merged into develop
+develop: now contains Dev-1 changes, version stays 1.2.0-DEV
+```
 
-> **Note:** Requiring the branch to be up to date with develop solves two problems simultaneously — it prevents code overwrites from parallel development AND surfaces version conflicts locally, forcing the developer to consciously update their version before raising a PR.
+**Step 5 - Dev-2 merges develop into their branch (gets Dev-1 changes) and raises PR:**
+```
+Dev-2: merge develop -> feature/add-payment-gateway (gets Dev-1 changes)
+Dev-2: resolves any code conflicts locally if any
+Dev-2: raises PR to develop
+Dev-2: PR approved and merged into develop
+develop: now contains both Dev-1 and Dev-2 changes, version stays 1.2.0-DEV
+```
+
+> **Key Insight:** Since feature branches always carry `SNAPSHOT` and develop always carries `DEV`, their versions will never be equal — eliminating version conflicts between parallel feature branches in the same release cycle. No version bumping is required.
+
+### New Release Cycle - Version Conflict Edge Case
+
+A version conflict on `version.txt` can occur when a new release cycle starts and a developer has an existing feature branch from the previous cycle:
+
+```
+Release Manager bumps develop: 1.1.0-DEV -> 1.2.0-DEV
+
+Developer with existing feature branch still has: 1.1.0-SNAPSHOT
+
+Developer merges develop into their branch:
+  -> Git raises a merge conflict on version.txt
+  -> Developer manually resolves it by updating to 1.2.0-SNAPSHOT
+  -> Developer then raises PR as normal
+```
+
+The branch protection rule - **"branch must be up to date with develop before merging"** - ensures this conflict is always surfaced and resolved locally by the developer before the PR is raised.
 
 ---
 
 ## 8. Docker Image Tagging Convention
 
-Every CI build produces two Docker image tags — a specific immutable tag tied to the commit, and a floating `latest` tag for convenience.
+Every CI build produces two Docker image tags - a specific immutable tag tied to the commit, and a floating `latest` tag for convenience.
 
 ### Tagging Strategy per Stage
 
@@ -163,11 +207,11 @@ Every CI build produces two Docker image tags — a specific immutable tag tied 
 When multiple developers work on different feature branches with the same version (e.g., `1.1.0-SNAPSHOT`), their floating tags would overwrite each other if only the version was used. Including the branch name in the tag scopes it to the branch, ensuring each developer has their own isolated floating tag without any manual coordination.
 
 ```
-app:1.1.0-SNAPSHOT-add-user-auth-latest       # Dev1's floating tag
-app:1.1.0-SNAPSHOT-add-payment-gateway-latest # Dev2's floating tag
+app:1.1.0-SNAPSHOT-add-user-auth-latest       # Dev-1's floating tag
+app:1.1.0-SNAPSHOT-add-payment-gateway-latest # Dev-2's floating tag
 ```
 
-The branch name is derived automatically by the CI pipeline from the Git branch — no developer input or communication required.
+The branch name is derived automatically by the CI pipeline from the Git branch - no developer input or communication required.
 
 ### Image Scans
 
@@ -177,24 +221,24 @@ On every push to a feature branch, after the Docker image is built and pushed, t
 
 ## 9. Git Tagging Strategy
 
-Git tags are used to mark specific commits at key points in the release lifecycle. Unlike branch names which move with new commits, a tag always points to the same commit — making them ideal for traceability.
+Git tags are used to mark specific commits at key points in the release lifecycle. Unlike branch names which move with new commits, a tag always points to the same commit - making them ideal for traceability.
 
 ### Tag Progression per Release Cycle
 
-Every release cycle follows a consistent versioning and tagging pattern. Version bumps happen at the **release cycle level**, not per feature — all developers working in a cycle share the same version.
+Every release cycle follows a consistent versioning and tagging pattern. Version bumps happen at the **release cycle level**, not per feature - all developers working in a cycle share the same version.
 
 ```
 Release Cycle 1:
-  feature branches  →  1.1.0-SNAPSHOT  (no Git tag)
-  develop           →  1.1.0-DEV       → Git tag: v1.1.0-DEV
-  release branch    →  1.1.0-RC        → Git tag: v1.1.0-RC
-  master            →  1.1.0           → Git tag: v1.1.0
+  feature branches  ->  1.1.0-SNAPSHOT  (no Git tag)
+  develop           ->  1.1.0-DEV       -> Git tag: v1.1.0-DEV
+  release branch    ->  1.1.0-RC        -> Git tag: v1.1.0-RC
+  master            ->  1.1.0           -> Git tag: v1.1.0
 
 Release Cycle 2:
-  feature branches  →  1.2.0-SNAPSHOT  (no Git tag)
-  develop           →  1.2.0-DEV       → Git tag: v1.2.0-DEV
-  release branch    →  1.2.0-RC        → Git tag: v1.2.0-RC
-  master            →  1.2.0           → Git tag: v1.2.0
+  feature branches  ->  1.2.0-SNAPSHOT  (no Git tag)
+  develop           ->  1.2.0-DEV       -> Git tag: v1.2.0-DEV
+  release branch    ->  1.2.0-RC        -> Git tag: v1.2.0-RC
+  master            ->  1.2.0           -> Git tag: v1.2.0
 ```
 
 ### Git Tag to Docker Image Mapping
@@ -219,11 +263,11 @@ Once a release is successfully merged into master and deployed to production, th
 
 | Step | Action | Who |
 |------|--------|-----|
-| 1 | Create release branch from develop (`release/rc-01`) | Release Manager |
-| 2 | After release merges into master, merge master back into develop to keep it in sync | Release Manager |
-| 3 | Update `version.txt` in develop to the next release version (e.g., `1.1.0-DEV` → `1.2.0-DEV`) | Release Manager |
+| 1 | After release merges into master, merge master back into develop to keep it in sync | Release Manager |
+| 2 | Update `version.txt` in develop to the next release version (e.g., `1.1.0-DEV` -> `1.2.0-DEV`) | Release Manager |
+| 3 | Create Git tag on develop (`v1.2.0-DEV`) to mark the start of the new release cycle | Release Manager |
 
-> **Note:** Step 3 signals the start of the next release cycle. All developers checking out new feature branches after this point will pick up the new version automatically.
+> **Note:** Step 2 signals the start of the next release cycle. All developers checking out new feature branches after this point will pick up the new version automatically.
 
 ---
 
@@ -247,7 +291,7 @@ To enable developers to test their feature branch images in a production-like en
 - Each developer has their own isolated K8s namespace on the shared cluster.
 - Developer deploys their feature branch image (`app:1.1.0-SNAPSHOT-<branch>-latest`) to their namespace via a manual GitHub Actions trigger.
 - Resource limits are enforced per namespace using K8s `ResourceQuotas` to control costs.
-- Namespaces are lightweight — no significant resource overhead when idle.
+- Namespaces are lightweight - no significant resource overhead when idle.
 
 > **Pending Decisions:** The following details are to be finalized:
 > - Namespace naming convention
@@ -262,17 +306,17 @@ To enable developers to test their feature branch images in a production-like en
 ### Branch Protection Rules
 
 - `master`, `develop`, and `release/*` branches must have branch protection enabled.
-- Direct pushes to protected branches are blocked — all changes must go through Pull Requests.
+- Direct pushes to protected branches are blocked - all changes must go through Pull Requests.
 - PRs require at least one code review approval before merging.
 - Feature branches must be up to date with develop before merging is allowed.
-- All CI status checks (tests, version check, image scans) must pass before merging.
+- All CI status checks (tests, image build, image scans) must pass before merging.
 
 ### CI/CD Triggers Summary
 
 | Branch / Event | CI/CD Trigger | Environment |
 |----------------|--------------|-------------|
 | `feature/*` push | Automated tests + image build + scan | None (test only) |
-| Merge to `develop` | CI + version update + Docker build + deploy | Dev |
-| `release/rc-xx` push | CI + version update + Docker build + deploy | QA / Stage / Preprod |
-| Merge to `master` | CI + version finalize + Docker build + deploy | Production |
+| Merge to `develop` | CI + Docker build + deploy | Dev |
+| `release/rc-xx` push | CI + Docker build + deploy | QA / Stage / Preprod |
+| Merge to `master` | CI + Docker build + deploy | Production |
 | `hotfix/*` merge to master | CI + Docker build + deploy | Production |
