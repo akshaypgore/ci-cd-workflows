@@ -13,6 +13,9 @@ jobs:
     runs-on: ubuntu-latest
   
     steps:
+      - run: |
+          echo "${{ github.ref_name }}"
+
       - name: Derive image name from repository
         id: image-name
         run: |
@@ -32,5 +35,42 @@ jobs:
           VERSION=$(cat version.txt | tr -d '[:space:]')
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "Read version: $VERSION"
+
+      - name: Construct image tag
+        id: construct-tag
+        run: |
+          VERSION="${{ steps.read-version.outputs.VERSION }}"
+          IMAGE="${{ steps.image-name.outputs.IMAGE_NAME }}"
+          COMMIT_ID="${{ github.sha }}"
+          SHORT_COMMIT="${COMMIT_ID::7}"
+          BRANCH="${{ github.ref_name }}"
+          CLEAN_BRANCH=$(echo "$BRANCH" | sed 's/[^a-zA-Z0-9._-]/-/g')
+
+          # Detect suffix from version.txt and construct tags accordingly
+          if [[ "$VERSION" == *"-SNAPSHOT"* ]]; then
+            # feature/* or hotfix/* - include branch name in tag
+            SPECIFIC_TAG="$IMAGE:$VERSION-$CLEAN_BRANCH-$SHORT_COMMIT"
+            FLOATING_TAG="$IMAGE:$VERSION-$CLEAN_BRANCH-latest"
+
+          elif [[ "$VERSION" == *"-DEV"* ]]; then
+            # develop branch
+            SPECIFIC_TAG="$IMAGE:$VERSION-$SHORT_COMMIT"
+            FLOATING_TAG="$IMAGE:$VERSION-latest"
+
+          elif [[ "$VERSION" == *"-RC"* ]]; then
+            # release/* branch
+            SPECIFIC_TAG="$IMAGE:$VERSION-$SHORT_COMMIT"
+            FLOATING_TAG="$IMAGE:$VERSION-latest"
+
+          else
+            # master - no suffix, clean version tag
+            SPECIFIC_TAG="$IMAGE:$VERSION"
+            FLOATING_TAG="$IMAGE:latest"
+          fi
+
+          echo "SPECIFIC_TAG=$SPECIFIC_TAG" >> $GITHUB_OUTPUT
+          echo "FLOATING_TAG=$FLOATING_TAG" >> $GITHUB_OUTPUT
+          echo "Specific tag: $SPECIFIC_TAG"
+          echo "Floating tag: $FLOATING_TAG"
 
 
