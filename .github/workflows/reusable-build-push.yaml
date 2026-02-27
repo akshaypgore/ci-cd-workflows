@@ -17,8 +17,20 @@ jobs:
         id: image-name
         run: |
           IMAGE_NAME="${{ github.repository }}"
-          IMAGE_NAME="${IMAGE_NAME##*/}"
+          IMAGE_NAME="${IMAGE_NAME##*/}" ##Remove everything till last /
           echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_OUTPUT
           echo "Image name: $IMAGE_NAME"
+
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Read version from version.txt
+        id: read-version
+        run: |
+          VERSION=$(cat version.txt | tr -d '[:space:]')
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Read version: $VERSION"
 
 
