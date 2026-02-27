@@ -1,0 +1,24 @@
+name: Reusable - Build and Push Docker Image
+
+on:
+  workflow_call:
+    secrets:
+      DOCKERHUB_USERNAME:
+        required: true
+      DOCKERHUB_TOKEN:
+        required: true
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+  
+    steps:
+      - name: Derive image name from repository
+        id: image-name
+        run: |
+          IMAGE_NAME="${{ github.repository }}"
+          IMAGE_NAME="${IMAGE_NAME##*/}"
+          echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_OUTPUT
+          echo "Image name: $IMAGE_NAME"
+
+
