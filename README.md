@@ -115,24 +115,33 @@ The version suffix clearly communicates the stage of the code:
 
 ### Who Updates version.txt?
 
-| Stage | Responsibility |
-|-------|---------------|
-| `feature/*` branch | Developer manually updates `version.txt` when checking out the feature branch. |
-| `develop` | CI pipeline automatically updates the suffix from SNAPSHOT to DEV on merge. |
-| `release/rc-xx` | CI pipeline automatically updates the suffix from DEV to RC when Release Manager cuts the release branch. |
-| `master` | CI pipeline automatically removes the suffix (e.g., `1.1.0-RC` → `1.1.0`) on merge to master. |
+| Stage | Who | Action |
+|-------|-----|--------|
+| New release cycle starts | Release Manager | Updates `version.txt` in develop to next version (e.g., `1.2.0-DEV`) |
+| Developer checks out feature branch | Developer | Appends `-SNAPSHOT` to get `1.2.0-SNAPSHOT` |
+| Release branch cut | Release Manager | Updates `version.txt` to `1.2.0-RC` |
+| Release merged into master | Release Manager | Updates `version.txt` to `1.2.0` (removes suffix) |
 
-> **Note:** This section is pending final decision on ownership at each stage.
+> **Note:** The CI pipeline is not involved in updating `version.txt` at any stage — it is entirely manual. CI only acts as a validator to catch any version mistakes.
 
 ### Version Check in CI Pipeline
 
-To prevent version conflicts, the CI pipeline enforces the following checks on every PR to develop:
+Since feature branches always carry `SNAPSHOT` and develop always carries `DEV`, their versions will **never be equal under normal circumstances** — eliminating version conflicts between parallel feature branches working in the same release cycle.
+
+However, a conflict can occur at the **start of a new release cycle**:
+
+- Release Manager bumps `version.txt` in develop from `1.1.0-DEV` to `1.2.0-DEV`.
+- A developer with an existing feature branch checked out from the previous cycle still has `1.1.0-SNAPSHOT`.
+- When the developer merges develop into their feature branch, Git raises a **merge conflict on version.txt**.
+- The developer must manually resolve the conflict by updating their version to `1.2.0-SNAPSHOT`.
+
+The CI pipeline acts as a safety net in this case:
 
 - The feature branch must be up to date with develop before a PR can be merged (enforced via branch protection rules).
-- The CI pipeline checks that the version in `version.txt` on the feature branch is different from the current version in develop.
-- If the versions match, the pipeline raises an error and blocks the merge, asking the developer to bump the version.
+- The CI pipeline checks that the version in `version.txt` on the feature branch is not equal to the version in develop.
+- If the versions match (e.g., both are `1.2.0-DEV`), the pipeline raises an error and blocks the merge, asking the developer to correct their version to `1.2.0-SNAPSHOT`.
 
-> **Note:** Requiring the branch to be up to date with develop solves two problems simultaneously — it prevents code overwrites from parallel development AND forces developers to resolve version conflicts locally before raising a PR.
+> **Note:** Requiring the branch to be up to date with develop solves two problems simultaneously — it prevents code overwrites from parallel development AND surfaces version conflicts locally, forcing the developer to consciously update their version before raising a PR.
 
 ---
 
@@ -200,7 +209,7 @@ Git tags drive Docker image tags, creating a single source of truth. Given a Doc
 
 ### Who Creates Git Tags?
 
-All Git tags are created **manually** by the Release Manager at each stage. Automation may be considered in future iterations.
+All Git tags are created **manually** by the Release Manager at each stage.
 
 ---
 
