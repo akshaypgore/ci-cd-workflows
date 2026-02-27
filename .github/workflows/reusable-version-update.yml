@@ -1,0 +1,60 @@
+name: Reusable - Update version.txt
+
+on:
+  workflow_call:
+    inputs:
+      replace-from:
+        description: "Suffix to replace (e.g., SNAPSHOT, DEV, RC)"
+        required: true
+        type: string
+      replace-to:
+        description: "Suffix to replace with (e.g., DEV, RC, or empty for master)"
+        required: false
+        type: string
+        default: ""
+    outputs:
+      updated-version:
+        description: "The updated version string"
+        value: ${{ jobs.update-version.outputs.updated-version }}
+
+jobs:
+  update-version:
+    runs-on: ubuntu-latest
+    outputs:
+      updated-version: ${{ steps.update.outputs.UPDATED_VERSION }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: ${{ github.ref_name }}
+
+      - name: Update version.txt
+        id: update
+        run: |
+          CURRENT_VERSION=$(cat version.txt | tr -d '[:space:]')
+          echo "Current version: $CURRENT_VERSION"
+
+          FROM="${{ inputs.replace-from }}"
+          TO="${{ inputs.replace-to }}"
+
+          if [ -z "$TO" ]; then
+            # master - remove suffix entirely (e.g., 1.1.0-RC -> 1.1.0)
+            UPDATED_VERSION="${CURRENT_VERSION%-$FROM}"
+          else
+            # replace suffix (e.g., 1.1.0-SNAPSHOT -> 1.1.0-DEV)
+            UPDATED_VERSION="${CURRENT_VERSION/$FROM/$TO}"
+          fi
+
+          echo "$UPDATED_VERSION" > version.txt
+          echo "Updated version: $UPDATED_VERSION"
+          echo "UPDATED_VERSION=$UPDATED_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Commit updated version.txt
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add version.txt
+          git commit -m "chore: update version to ${{ steps.update.outputs.UPDATED_VERSION }} [skip ci]"
+          git push
