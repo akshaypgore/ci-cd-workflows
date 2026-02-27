@@ -166,7 +166,59 @@ On every push to a feature branch, after the Docker image is built and pushed, t
 
 ---
 
-## 9. Deployment Architecture
+## 9. Git Tagging Strategy
+
+Git tags are used to mark specific commits at key points in the release lifecycle. Unlike branch names which move with new commits, a tag always points to the same commit — making them ideal for traceability.
+
+### Tag Progression per Release Cycle
+
+Every release cycle follows a consistent versioning and tagging pattern. Version bumps happen at the **release cycle level**, not per feature — all developers working in a cycle share the same version.
+
+```
+Release Cycle 1:
+  feature branches  →  1.1.0-SNAPSHOT  (no Git tag)
+  develop           →  1.1.0-DEV       → Git tag: v1.1.0-DEV
+  release branch    →  1.1.0-RC        → Git tag: v1.1.0-RC
+  master            →  1.1.0           → Git tag: v1.1.0
+
+Release Cycle 2:
+  feature branches  →  1.2.0-SNAPSHOT  (no Git tag)
+  develop           →  1.2.0-DEV       → Git tag: v1.2.0-DEV
+  release branch    →  1.2.0-RC        → Git tag: v1.2.0-RC
+  master            →  1.2.0           → Git tag: v1.2.0
+```
+
+### Git Tag to Docker Image Mapping
+
+Git tags drive Docker image tags, creating a single source of truth. Given a Docker image tag, anyone can immediately find the exact commit that produced it using `git checkout <tag>`.
+
+| Git Tag | Docker Image Tags |
+|---------|------------------|
+| `v1.1.0-DEV` | `app:v1.1.0-DEV`, `app:v1.1.0-DEV-latest` |
+| `v1.1.0-RC` | `app:v1.1.0-RC`, `app:v1.1.0-RC-latest` |
+| `v1.1.0` | `app:v1.1.0`, `app:latest` |
+
+### Who Creates Git Tags?
+
+All Git tags are created **manually** by the Release Manager at each stage. Automation may be considered in future iterations.
+
+---
+
+## 10. Post-Release Checklist
+
+Once a release is successfully merged into master and deployed to production, the following steps must be completed manually by the Release Manager to prepare for the next release cycle:
+
+| Step | Action | Who |
+|------|--------|-----|
+| 1 | Create release branch from develop (`release/rc-01`) | Release Manager |
+| 2 | After release merges into master, merge master back into develop to keep it in sync | Release Manager |
+| 3 | Update `version.txt` in develop to the next release version (e.g., `1.1.0-DEV` → `1.2.0-DEV`) | Release Manager |
+
+> **Note:** Step 3 signals the start of the next release cycle. All developers checking out new feature branches after this point will pick up the new version automatically.
+
+---
+
+## 11. Deployment Architecture
 
 > **Stack:** Kubernetes (K8s) | GitHub Actions | Rolling Update Strategy
 
@@ -196,7 +248,7 @@ To enable developers to test their feature branch images in a production-like en
 
 ---
 
-## 10. Branch Protection & CI/CD Summary
+## 12. Branch Protection & CI/CD Summary
 
 ### Branch Protection Rules
 
