@@ -3,19 +3,16 @@ name: Reusable - Build and Push Docker Image
 on:
   workflow_call:
     # secrets:
-    #   DOCKERHUB_USERNAME:
-    #     required: true
-    #   DOCKERHUB_TOKEN:
-    #     required: true
+      # REGISTRY_USERNAME:
+      #   required: true
+      # REGISTRY_PASSWORD:
+      #   required: true
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-  
-    steps:
-      - run: |
-          echo "Branch Name: ${{ github.ref_name }}"
 
+    steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
@@ -58,7 +55,9 @@ jobs:
             FLOATING_TAG="$IMAGE:$VERSION-latest"
 
           elif [[ "$VERSION" == *"-RC"* ]]; then
-            # release/* branch
+            # release/* branch - derive RC suffix from branch name
+            # e.g. release/rc-01 -> RC-01
+            RC_PART=$(echo "$BRANCH" | sed 's/release\///' | tr '[:lower:]' '[:upper:]')
             SPECIFIC_TAG="$IMAGE:$VERSION-$SHORT_COMMIT"
             FLOATING_TAG="$IMAGE:$VERSION-latest"
 
@@ -97,5 +96,3 @@ jobs:
           echo "- Image name: \`${{ steps.image-name.outputs.IMAGE_NAME }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- Specific tag: \`${{ steps.construct-tag.outputs.SPECIFIC_TAG }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- Floating tag: \`${{ steps.construct-tag.outputs.FLOATING_TAG }}\`" >> $GITHUB_STEP_SUMMARY
-
-

@@ -27,7 +27,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GH_PAT }}
           ref: ${{ github.ref_name }}
 
       - name: Update version.txt
@@ -38,12 +38,20 @@ jobs:
 
           FROM="${{ inputs.replace-from }}"
           TO="${{ inputs.replace-to }}"
+          BRANCH="${{ github.ref_name }}"
+
+          # For release branches, derive RC suffix from branch name
+          # e.g. release/rc-01 -> RC-01
+          if [[ "$BRANCH" == release/* ]]; then
+            RC_PART=$(echo "$BRANCH" | sed 's/release\///' | tr '[:lower:]' '[:upper:]')
+            TO="$RC_PART"
+          fi
 
           if [ -z "$TO" ]; then
-            # master - remove suffix entirely (e.g., 1.1.0-RC -> 1.1.0)
-            UPDATED_VERSION="${CURRENT_VERSION%-$FROM}"
+            # master - remove suffix entirely (e.g., 1.1.0-RC-01 -> 1.1.0)
+            UPDATED_VERSION=$(echo "$CURRENT_VERSION" | sed "s/-$FROM.*//")
           else
-            # replace suffix (e.g., 1.1.0-SNAPSHOT -> 1.1.0-DEV)
+            # replace suffix (e.g., 1.1.0-SNAPSHOT -> 1.1.0-DEV or 1.1.0-DEV -> 1.1.0-RC-01)
             UPDATED_VERSION="${CURRENT_VERSION/$FROM/$TO}"
           fi
 
