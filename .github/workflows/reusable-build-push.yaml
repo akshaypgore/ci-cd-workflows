@@ -16,18 +16,18 @@ jobs:
       - run: |
           echo "Branch Name: ${{ github.ref_name }}"
 
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}  # always pulls latest commit on the branch
+
       - name: Derive image name from repository
         id: image-name
         run: |
           IMAGE_NAME="${{ github.repository }}"
-          IMAGE_NAME="${IMAGE_NAME##*/}" ##Remove everything till last /
+          IMAGE_NAME="${IMAGE_NAME##*/}"
           echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_OUTPUT
           echo "Image name: $IMAGE_NAME"
-
-      - name: Checkout code
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
 
       - name: Read version from version.txt
         id: read-version
@@ -72,5 +72,30 @@ jobs:
           echo "FLOATING_TAG=$FLOATING_TAG" >> $GITHUB_OUTPUT
           echo "Specific tag: $SPECIFIC_TAG"
           echo "Floating tag: $FLOATING_TAG"
+
+      # - name: Log in to Docker registry
+      #   uses: docker/login-action@v3
+      #   with:
+      #     username: ${{ secrets.REGISTRY_USERNAME }}
+      #     password: ${{ secrets.REGISTRY_PASSWORD }}
+
+      # - name: Build Docker image
+      #   run: |
+      #     docker build \
+      #       -t ${{ steps.construct-tag.outputs.SPECIFIC_TAG }} \
+      #       -t ${{ steps.construct-tag.outputs.FLOATING_TAG }} \
+      #       .
+
+      # - name: Push Docker image
+      #   run: |
+      #     docker push ${{ steps.construct-tag.outputs.SPECIFIC_TAG }}
+      #     docker push ${{ steps.construct-tag.outputs.FLOATING_TAG }}
+
+      - name: Summary
+        run: |
+          echo "### Docker Image Published" >> $GITHUB_STEP_SUMMARY
+          echo "- Image name: \`${{ steps.image-name.outputs.IMAGE_NAME }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Specific tag: \`${{ steps.construct-tag.outputs.SPECIFIC_TAG }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Floating tag: \`${{ steps.construct-tag.outputs.FLOATING_TAG }}\`" >> $GITHUB_STEP_SUMMARY
 
 
