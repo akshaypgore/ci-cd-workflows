@@ -27,7 +27,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GH_PAT }}
+          # token: ${{ secrets.GH_PAT }}
           ref: ${{ github.ref_name }}
 
       - name: Update version.txt
